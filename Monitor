@@ -1,60 +1,10 @@
-# .github/workflows/monitor-zksealevel.yml
-name: Monitor zkSealevel Deployment
-
-on:
-  schedule:
-    - cron: '0 */4 * * *'  # Every 4 hours
-  workflow_dispatch:  # Manual trigger
-
-jobs:
-  monitor:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check for deployment signals
-        run: |
-          # Clone repo
-          git clone https://github.com/zkSLLabs/zkSealevel_Division_I.git
-          cd zkSealevel_Division_I
-          
-          # Check critical files
-          echo "🔍 Checking deployment signals..."
-          
-          # 1. Cluster configuration
-          if grep -q 'cluster.*=.*"Devnet"' Anchor.toml; then
-            echo "🚨 ALERT: Anchor.toml switched to Devnet!"
-            echo "devnet_switch=true" >> $GITHUB_OUTPUT
-          fi
-          
-          # 2. Program ID
-          if grep -q '^validator_lock.*=' Anchor.toml; then
-            PROGRAM_ID=$(grep '^validator_lock' Anchor.toml | cut -d'"' -f2)
-            echo "🚨 ALERT: Program ID found: $PROGRAM_ID"
-            echo "program_id=$PROGRAM_ID" >> $GITHUB_OUTPUT
-          fi
-          
-          # 3. Recent commits (last 24h)
-          RECENT_COMMITS=$(git log --since="24 hours ago" --oneline | wc -l)
-          echo "Recent commits (24h): $RECENT_COMMITS"
-          
-          # 4. Deployment-related commits
-          DEPLOY_COMMITS=$(git log --all --grep="deploy\|launch\|devnet\|live" --since="7 days ago" --oneline)
-          if [ -n "$DEPLOY_COMMITS" ]; then
-            echo "🚨 ALERT: Deployment-related commits found!"
-            echo "$DEPLOY_COMMITS"
-          fi
-          
-          # 5. Check for new tags
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
-          echo "Latest tag: $LATEST_TAG"
-          
-      - name: Send notification
-        if: steps.monitor.outputs.devnet_switch == 'true'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '🚨 zkSealevel Deployment Alert!',
-              body: 'Devnet deployment signals detected. Check repo immediately!'
-            })
+# Create a new repository on GitHub first, then:
+mkdir zkSealevel-monitor
+cd zkSealevel-monitor
+git init
+echo "# zkSealevel Deployment Monitor" > README.md
+git add README.md
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/zkSealevel-monitor.git
+git push -u origin main
